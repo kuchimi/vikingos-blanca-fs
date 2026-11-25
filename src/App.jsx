@@ -1919,23 +1919,7 @@ export default function App() {
     });
   };
 
-  const handleDeleteRivalResult = (item) => {
-    setConfirmDialog({
-      title: "Eliminar resultado de rivales",
-      message: `¿Quieres borrar el partido ${item.home} vs ${item.away} (${item.round || 'Liga'})?`,
-      onConfirm: async () => {
-        try {
-          await deleteDoc(doc(db, `${basePath}/rival_results`, item.id));
-          showToast("Resultado eliminado");
-        } catch (err) {
-          console.error(err);
-          showToast("Error al eliminar resultado", "error");
-        } finally {
-          setConfirmDialog(null);
-        }
-      }
-    });
-  };
+
 
   // Exportar el historial completo de asistencia a archivo Excel (.xls)
   const handleExportAttendanceExcel = () => {
