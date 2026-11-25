@@ -2953,10 +2953,7 @@ export default function App() {
                     <RefreshCw className="w-4 h-4" />
                     Recalcular desde Partidos
                   </button>
-                  <button
-                    onClick={() => {
-                      setEditingStandingTeam(null);
-                      setShowTeamStandingModal(true);
+                
             </div>
 
             {/* Tabla Responsiva */}
