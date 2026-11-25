@@ -2942,7 +2942,30 @@ export default function App() {
                 <p className="text-sm text-slate-500">Ordenada automáticamente por Puntos y Diferencia de Goles</p>
               </div>
               {coachMode && (
-                <button
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      await syncStandingsFromAllResults(matches, rivalResults);
+                      showToast("Clasificación recalculada desde los partidos actuales");
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 font-bold text-sm shadow-sm transition"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Recalcular desde Partidos
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingStandingTeam(null);
+                      setShowTeamStandingModal(true);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Añadir Equipo Rival
+                  </button>
+                </div>
+              )}
+            <button
                   onClick={() => {
                     setEditingStandingTeam(null);
                     setShowTeamStandingModal(true);
