@@ -3533,7 +3533,6 @@ export default function App() {
           </div>
         )}
       </main>
-
       {/* Pie de página */}
       <footer className="relative z-10 bg-white/95 backdrop-blur-sm border-t border-slate-200 py-5 text-center text-xs text-slate-500">
         <p>{teamConfig.clubName || 'Blanca Fútbol Sala'} — {teamConfig.teamName} • Portal Oficial de Gestión Deportiva ({teamConfig.season})</p>
