@@ -2957,25 +2957,6 @@ export default function App() {
                     onClick={() => {
                       setEditingStandingTeam(null);
                       setShowTeamStandingModal(true);
-                    }}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Añadir Equipo Rival
-                  </button>
-                </div>
-              )}
-            <button
-                  onClick={() => {
-                    setEditingStandingTeam(null);
-                    setShowTeamStandingModal(true);
-                  }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition"
-                >
-                  <Plus className="w-5 h-5" />
-                  Añadir Equipo Rival
-                </button>
-              )}
             </div>
 
             {/* Tabla Responsiva */}
