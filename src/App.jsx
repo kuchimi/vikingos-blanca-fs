@@ -2955,7 +2955,7 @@ export default function App() {
                   </button>
                 
             </div>
-
+)}
             {/* Tabla Responsiva */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
