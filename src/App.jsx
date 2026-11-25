@@ -2941,7 +2941,7 @@ export default function App() {
                 <h2 className="text-xl font-extrabold text-slate-900">Clasificación de Liga</h2>
                 <p className="text-sm text-slate-500">Ordenada automáticamente por Puntos y Diferencia de Goles</p>
               </div>
-              {coachMode && (
+             {coachMode && (
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={async () => {
@@ -2953,8 +2953,7 @@ export default function App() {
                     <RefreshCw className="w-4 h-4" />
                     Recalcular desde Partidos
                   </button>
-                
-            </div>
+                </div>
 )}
             {/* Tabla Responsiva */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -3528,7 +3527,6 @@ export default function App() {
                 <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
                   Aún no hay ningún pase de lista guardado. Elige la fecha arriba y pulsa en <strong>Guardar Asistencia del Día</strong>.
                 </div>
-              )}
             </div>
           </div>
         )}
