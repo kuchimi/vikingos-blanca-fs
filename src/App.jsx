@@ -1361,6 +1361,79 @@ export default function App() {
   // ------------------------------------------
   // 6. CÁLCULOS DERIVADOS Y ORDENACIÓN
   // ------------------------------------------
+  const syncStandingsFromAllResults = async (latestMatchesList, latestRivalResultsList) => {
+    const basePath = `artifacts/${appId}/public/data`;
+    const statsByTeamName = {};
+
+    standings.forEach((t) => {
+      const key = (t.name || "").trim().toUpperCase();
+      statsByTeamName[key] = { pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0 };
+    });
+
+    const ownKey = (
+      standings.find((t) => t.isOwn)?.name ||
+      teamConfig.teamName ||
+      "VIKINGOS SONDOS BLANCA FS"
+    ).trim().toUpperCase();
+
+    const applyMatchResult = (homeName, awayName, homeGoals, awayGoals) => {
+      const hKey = (homeName || "").trim().toUpperCase();
+      const aKey = (awayName || "").trim().toUpperCase();
+      if (!hKey || !aKey || hKey === "DESCANSA" || aKey === "DESCANSA") return;
+
+      const gh = Number(homeGoals) || 0;
+      const ga = Number(awayGoals) || 0;
+
+      if (statsByTeamName[hKey]) {
+        statsByTeamName[hKey].pj += 1;
+        statsByTeamName[hKey].gf += gh;
+        statsByTeamName[hKey].gc += ga;
+        if (gh > ga) statsByTeamName[hKey].g += 1;
+        else if (gh === ga) statsByTeamName[hKey].e += 1;
+        else statsByTeamName[hKey].p += 1;
+      }
+
+      if (statsByTeamName[aKey]) {
+        statsByTeamName[aKey].pj += 1;
+        statsByTeamName[aKey].gf += ga;
+        statsByTeamName[aKey].gc += gh;
+        if (ga > gh) statsByTeamName[aKey].g += 1;
+        else if (ga === gh) statsByTeamName[aKey].e += 1;
+        else statsByTeamName[aKey].p += 1;
+      }
+    };
+
+    latestMatchesList.forEach((m) => {
+      if (m.status !== "played") return;
+      const oppKey = (m.opponent || "").trim().toUpperCase();
+      if (!oppKey || oppKey === "DESCANSA") return;
+      const gf = Number(m.gf) || 0;
+      const gc = Number(m.gc) || 0;
+      if (m.isHome) {
+        applyMatchResult(ownKey, oppKey, gf, gc);
+      } else {
+        applyMatchResult(oppKey, ownKey, gc, gf);
+      }
+    });
+
+    latestRivalResultsList.forEach((r) => {
+      if (r.isBye) return;
+      const hKey = (r.home || "").trim().toUpperCase();
+      const aKey = (r.away || "").trim().toUpperCase();
+      if (!hKey || !aKey || hKey === "DESCANSA" || aKey === "DESCANSA") return;
+      if (hKey === ownKey || aKey === ownKey) return;
+      applyMatchResult(hKey, aKey, r.scoreHome, r.scoreAway);
+    });
+
+    await Promise.all(
+      standings.map((team) => {
+        const key = (team.name || "").trim().toUpperCase();
+        const computed = statsByTeamName[key];
+        if (!computed) return Promise.resolve();
+        return updateDoc(doc(db, `${basePath}/standings`, team.id), computed);
+      })
+    );
+  };
   const sortedStandings = useMemo(() => {
     return [...standings]
       .map((team) => {
@@ -1589,34 +1662,22 @@ export default function App() {
     }
   };
 
-  const handleSaveMatch = async (matchData, shouldSyncStandings) => {
+ const handleSaveMatch = async (matchData, shouldSyncStandings) => {
     try {
       const matchesRef = collection(db, `${basePath}/matches`);
+      let nextMatchesList = [];
       if (editingMatch) {
         await updateDoc(doc(matchesRef, editingMatch.id), matchData);
-        showToast("Partido actualizado");
+        nextMatchesList = matches.map((m) => (m.id === editingMatch.id ? { ...m, ...matchData } : m));
+        showToast("Partido y clasificación actualizados");
       } else {
-        await addDoc(matchesRef, matchData);
-        showToast("Nuevo partido añadido");
+        const docRef = await addDoc(matchesRef, matchData);
+        nextMatchesList = [...matches, { id: docRef.id, ...matchData }];
+        showToast("Partido añadido y clasificación actualizada");
       }
 
-      if (shouldSyncStandings && matchData.status === "played") {
-        const ownTeam = standings.find((t) => t.isOwn);
-        if (ownTeam) {
-          const gf = Number(matchData.gf) || 0;
-          const gc = Number(matchData.gc) || 0;
-          const isWin = gf > gc ? 1 : 0;
-          const isDraw = gf === gc ? 1 : 0;
-          const isLoss = gf < gc ? 1 : 0;
-          await updateDoc(doc(db, `${basePath}/standings`, ownTeam.id), {
-            pj: (Number(ownTeam.pj) || 0) + 1,
-            g: (Number(ownTeam.g) || 0) + isWin,
-            e: (Number(ownTeam.e) || 0) + isDraw,
-            p: (Number(ownTeam.p) || 0) + isLoss,
-            gf: (Number(ownTeam.gf) || 0) + gf,
-            gc: (Number(ownTeam.gc) || 0) + gc
-          });
-        }
+      if (shouldSyncStandings) {
+        await syncStandingsFromAllResults(nextMatchesList, rivalResults);
       }
 
       setShowMatchModal(false);
@@ -1634,7 +1695,9 @@ export default function App() {
       onConfirm: async () => {
         try {
           await deleteDoc(doc(db, `${basePath}/matches`, matchId));
-          showToast("Partido eliminado");
+          const remainingMatches = matches.filter((m) => m.id !== matchId);
+          await syncStandingsFromAllResults(remainingMatches, rivalResults);
+          showToast("Partido eliminado y clasificación recalculada");
         } catch (err) {
           console.error(err);
           showToast("Error al eliminar partido", "error");
@@ -1814,22 +1877,46 @@ export default function App() {
     });
   };
 
-  const handleSaveRivalResult = async (resultData) => {
+ const handleSaveRivalResult = async (resultData) => {
     try {
       const rivalRef = collection(db, `${basePath}/rival_results`);
+      let nextRivalList = [];
       if (editingRivalResult) {
         await updateDoc(doc(rivalRef, editingRivalResult.id), resultData);
-        showToast("Resultado de rivales actualizado");
+        nextRivalList = rivalResults.map((r) => (r.id === editingRivalResult.id ? { ...r, ...resultData } : r));
+        showToast("Resultado actualizado en clasificación");
       } else {
-        await addDoc(rivalRef, resultData);
-        showToast("Resultado de rivales guardado");
+        const docRef = await addDoc(rivalRef, resultData);
+        nextRivalList = [...rivalResults, { id: docRef.id, ...resultData }];
+        showToast("Resultado añadido a la clasificación");
       }
+      await syncStandingsFromAllResults(matches, nextRivalList);
       setShowRivalResultModal(false);
       setEditingRivalResult(null);
     } catch (err) {
       console.error(err);
       showToast("Error al guardar resultado de rivales", "error");
     }
+  };
+
+  const handleDeleteRivalResult = (item) => {
+    setConfirmDialog({
+      title: "Eliminar resultado de rivales",
+      message: `¿Quieres borrar el partido ${item.home} vs ${item.away} (${item.round || 'Liga'})?`,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, `${basePath}/rival_results`, item.id));
+          const remainingRivals = rivalResults.filter((r) => r.id !== item.id);
+          await syncStandingsFromAllResults(matches, remainingRivals);
+          showToast("Resultado eliminado y tabla actualizada");
+        } catch (err) {
+          console.error(err);
+          showToast("Error al eliminar resultado", "error");
+        } finally {
+          setConfirmDialog(null);
+        }
+      }
+    });
   };
 
   const handleDeleteRivalResult = (item) => {
@@ -3999,7 +4086,7 @@ function MatchFormModal({ match, teamName, onClose, onSave }) {
   const [gc, setGc] = useState(match?.gc ?? 0);
   const [scorers, setScorers] = useState(match?.scorers || '');
   const [bgImageUrl, setBgImageUrl] = useState(match?.bgImageUrl || '');
-  const [syncStandings, setSyncStandings] = useState(!match && status === 'played');
+  const [syncStandings, setSyncStandings] = useState(true);
 
   const handleMatchBgChange = (e) => {
     const file = e.target.files?.[0];
@@ -4174,7 +4261,7 @@ function MatchFormModal({ match, teamName, onClose, onSave }) {
                 )}
               </div>
 
-              {!match && (
+              
                 <label className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 cursor-pointer">
                   <input
                     type="checkbox"
@@ -4186,7 +4273,7 @@ function MatchFormModal({ match, teamName, onClose, onSave }) {
                     Sumar automáticamente estos puntos y goles a {teamName} en la Clasificación
                   </span>
                 </label>
-              )}
+              
             </>
           )}
 
