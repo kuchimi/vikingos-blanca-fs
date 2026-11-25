@@ -3525,12 +3525,14 @@ export default function App() {
                 </div>
               ) : (
                 <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
-                  Aún no hay ningún pase de lista guardado. Elige la fecha arriba y pulsa en <strong>Guardar Asistencia del Día</strong>.
+                    Aún no hay ningún pase de lista guardado. Elige la fecha arriba y pulsa en <strong>Guardar Asistencia del Día</strong>.
+                  </div>
                 </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </main>
+
       {/* Pie de página */}
       <footer className="relative z-10 bg-white/95 backdrop-blur-sm border-t border-slate-200 py-5 text-center text-xs text-slate-500">
         <p>{teamConfig.clubName || 'Blanca Fútbol Sala'} — {teamConfig.teamName} • Portal Oficial de Gestión Deportiva ({teamConfig.season})</p>
