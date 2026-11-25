@@ -3476,7 +3476,7 @@ export default function App() {
                               session.type === 'Partido'
                                 ? 'bg-indigo-100 text-indigo-800'
                                 : 'bg-slate-100 text-slate-700'
-                            }}>
+                            }`}>
                               {session.type}
                             </span>
                           </div>
