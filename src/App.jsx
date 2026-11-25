@@ -50,11 +50,18 @@ import {
 // ==========================================
 // 1. CONFIGURACIÓN E INICIALIZACIÓN FIREBASE
 // ==========================================
-const firebaseConfig = JSON.parse(__firebase_config);
+const firebaseConfig = {
+  apiKey: "AIzaSyDvgVj5K6e16xJrqcQvcmilPUszXoMtx88",
+  authDomain: "vikingos-blanca-fs.firebaseapp.com",
+  projectId: "vikingos-blanca-fs",
+  storageBucket: "vikingos-blanca-fs.firebasestorage.app",
+  messagingSenderId: "136290527424",
+  appId: "1:136290527424:web:73dda1ee2c4a1d5647a525"
+};
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const appId = 'vikingos-blanca-fs';
 
 // ==========================================
 // 2. DATOS INICIALES POR DEFECTO (SEED DATA)
