@@ -2941,7 +2941,7 @@ export default function App() {
                 <h2 className="text-xl font-extrabold text-slate-900">Clasificación de Liga</h2>
                 <p className="text-sm text-slate-500">Ordenada automáticamente por Puntos y Diferencia de Goles</p>
               </div>
-             {coachMode && (
+              {coachMode && (
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={async () => {
@@ -2953,8 +2953,31 @@ export default function App() {
                     <RefreshCw className="w-4 h-4" />
                     Recalcular desde Partidos
                   </button>
+                  <button
+                    onClick={() => {
+                      setEditingStandingTeam(null);
+                      setShowTeamStandingModal(true);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Añadir Equipo Rival
+                  </button>
                 </div>
-)}
+              )}
+            <button
+                  onClick={() => {
+                    setEditingStandingTeam(null);
+                    setShowTeamStandingModal(true);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition"
+                >
+                  <Plus className="w-5 h-5" />
+                  Añadir Equipo Rival
+                </button>
+              )}
+            </div>
+
             {/* Tabla Responsiva */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
@@ -3525,12 +3548,12 @@ export default function App() {
                 </div>
               ) : (
                 <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
-                    Aún no hay ningún pase de lista guardado. Elige la fecha arriba y pulsa en <strong>Guardar Asistencia del Día</strong>.
-                  </div>
+                  Aún no hay ningún pase de lista guardado. Elige la fecha arriba y pulsa en <strong>Guardar Asistencia del Día</strong>.
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
       </main>
 
       {/* Pie de página */}
