@@ -1266,17 +1266,39 @@ export default function App() {
       (err) => console.error("Error leyendo clasificación:", err)
     );
 
-    // 5.3 Partidos y Resultados
+    // 5.3 Partidos y Resultados (completa automáticamente hasta las 22 jornadas)
     const matchesRef = collection(db, `${basePath}/matches`);
     const unsubMatches = onSnapshot(
       matchesRef,
       (snap) => {
+        const currentList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
         if (snap.empty) {
           INITIAL_MATCHES.forEach((m) => {
             setDoc(doc(matchesRef, m.id), m).catch(console.error);
           });
+          setMatches(INITIAL_MATCHES);
+          return;
+        }
+
+        const existingIds = new Set(currentList.map((m) => m.id));
+        const existingRounds = new Set(
+          currentList.map((m) => (m.round || "").trim().toLowerCase())
+        );
+
+        const missingMatches = INITIAL_MATCHES.filter(
+          (m) =>
+            !existingIds.has(m.id) &&
+            !existingRounds.has((m.round || "").trim().toLowerCase())
+        );
+
+        if (missingMatches.length > 0) {
+          missingMatches.forEach((m) => {
+            setDoc(doc(matchesRef, m.id), m, { merge: true }).catch(console.error);
+          });
+          setMatches([...currentList, ...missingMatches]);
         } else {
-          setMatches(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+          setMatches(currentList);
         }
       },
       (err) => console.error("Error leyendo partidos:", err)
