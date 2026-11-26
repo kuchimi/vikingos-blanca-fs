@@ -82,15 +82,26 @@ export default function MatchTracker({
   const [roster, setRoster] = useState([]);
   useEffect(() => {
     setRoster((prev) => {
-      if (prev.length > 0) return prev;
-      return players.map((p, idx) => ({
-        id: p.id,
-        number: p.number,
-        name: p.name,
-        position: p.position || 'Jugador',
-        isCalledUp: true,
-        isStarter: idx < 5
-      }));
+      const prevMap = new Map(prev.map((item) => [item.id, item]));
+      return players.map((p, idx) => {
+        const existing = prevMap.get(p.id);
+        if (existing) {
+          return {
+            ...existing,
+            number: p.number,
+            name: p.name,
+            position: p.position || 'Jugador'
+          };
+        }
+        return {
+          id: p.id,
+          number: p.number,
+          name: p.name,
+          position: p.position || 'Jugador',
+          isCalledUp: true,
+          isStarter: prev.length === 0 && idx < 5
+        };
+      });
     });
   }, [players]);
 
