@@ -1,3 +1,4 @@
+import MatchTracker from './MatchTracker';
 import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
@@ -1434,6 +1435,66 @@ export default function App() {
       })
     );
   };
+  const handleSaveLiveMatchToPortal = async (actaFinal) => {
+    try {
+      const scorersSummary = actaFinal.players
+        .filter((p) => p.goals > 0)
+        .map((p) => (p.goals > 1 ? `${p.name} (${p.goals})` : p.name))
+        .join(", ");
+
+      const matchesRef = collection(db, `${basePath}/matches`);
+      let nextMatchesList = [];
+
+      if (actaFinal.matchId) {
+        const targetMatch = matches.find((m) => m.id === actaFinal.matchId);
+        const updatedPayload = {
+          round: actaFinal.jornada || targetMatch?.round || "Jornada",
+          opponent: actaFinal.rival,
+          date: targetMatch?.date || new Date().toISOString().split("T")[0],
+          isHome: actaFinal.isHome,
+          status: "played",
+          gf: Number(actaFinal.homeScore),
+          gc: Number(actaFinal.awayScore),
+          scorers: scorersSummary
+        };
+        await updateDoc(doc(matchesRef, actaFinal.matchId), updatedPayload);
+        nextMatchesList = matches.map((m) => (m.id === actaFinal.matchId ? { ...m, ...updatedPayload } : m));
+      } else {
+        const newPayload = {
+          round: actaFinal.jornada || "Amistoso",
+          opponent: actaFinal.rival,
+          date: new Date().toISOString().split("T")[0],
+          isHome: actaFinal.isHome,
+          status: "played",
+          gf: Number(actaFinal.homeScore),
+          gc: Number(actaFinal.awayScore),
+          scorers: scorersSummary
+        };
+        const created = await addDoc(matchesRef, newPayload);
+        nextMatchesList = [...matches, { id: created.id, ...newPayload }];
+      }
+
+      const playersRef = collection(db, `${basePath}/players`);
+      await Promise.all(
+        actaFinal.players.map((liveP) => {
+          if ((liveP.goals || 0) === 0 && (liveP.assists || 0) === 0) return Promise.resolve();
+          const existingPlayer = players.find((p) => p.id === liveP.id);
+          if (!existingPlayer) return Promise.resolve();
+          return updateDoc(doc(playersRef, existingPlayer.id), {
+            goals: (Number(existingPlayer.goals) || 0) + (Number(liveP.goals) || 0),
+            assists: (Number(existingPlayer.assists) || 0) + (Number(liveP.assists) || 0)
+          });
+        })
+      );
+
+      await syncStandingsFromAllResults(nextMatchesList, rivalResults);
+      showToast("¡Acta guardada en Resultados, Plantilla y Clasificación!");
+    } catch (err) {
+      console.error(err);
+      showToast("Error al guardar el acta", "error");
+    }
+  };
+  
   const sortedStandings = useMemo(() => {
     return [...standings]
       .map((team) => {
@@ -2201,7 +2262,10 @@ export default function App() {
               { id: 'clasificacion', label: 'Clasificación', icon: Trophy },
               { id: 'galeria', label: 'Galería de Fotos', icon: Camera },
               { id: 'plantilla', label: 'Plantilla', icon: Users },
-              ...(coachMode ? [{ id: 'asistencia', label: 'Asistencia (Privado)', icon: ClipboardCheck }] : [])
+              ...(coachMode ? [
+  { id: 'asistencia', label: 'Asistencia (Privado)', icon: ClipboardCheck },
+  { id: 'directo', label: 'Partido en Directo', icon: Clock }
+] : [])
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -2238,6 +2302,15 @@ export default function App() {
         {/* ------------------------------------------
             PESTAÑA 1: RESUMEN / INICIO
             ------------------------------------------ */}
+        {coachMode && activeTab === 'directo' && (
+          <MatchTracker
+            teamName={teamConfig.teamName}
+            matches={sortedMatches}
+            players={sortedPlayers}
+            onSaveLiveMatch={handleSaveLiveMatchToPortal}
+            onClose={() => setActiveTab('inicio')}
+          />
+        )}
         {activeTab === 'inicio' && (
           <div className="space-y-6">
             {/* Fila Superior: Próximo Partido + Último Resultado */}
